@@ -1,5 +1,10 @@
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.builder.ResponseSpecBuilder;
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.specification.ResponseSpecification;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import java.util.List;
@@ -8,43 +13,55 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 public class UsersAPITest {
+    //object stores everything about the request.
+    //Common request specification
+    RequestSpecification requestSpec = new RequestSpecBuilder()
+            .setBaseUri("https://reqres.in")
+            .addHeader("x-api-key", "reqres_194ef351d4a44e7f8a57a90e5a311865")
+            .addHeader("Accept", "application/json")
+            .setContentType(ContentType.JSON)
+            .build();
+
+    // Common response specification
+    ResponseSpecification responseSpec = new ResponseSpecBuilder()
+            .expectStatusCode(200)
+            .expectContentType(ContentType.JSON)
+            .build();
+
     @Test
     //Check the Response
     public void test_1(){
-        RestAssured.baseURI = "https://reqres.in";
+        //the server sends back a response.
+        //Now the response object contains.
         Response response = given()
-                .header("x-api-key", "reqres_194ef351d4a44e7f8a57a90e5a311865")
-                .header("Accept", "application/json")
+                .spec(requestSpec)
                 .log().all()
-                .when()
+            .when()
                 .get("/api/users");
+        // Methods belong to the Response class, not RequestSpecification.
         System.out.println("StatusCode: "+response.getStatusCode());
         System.out.println("ResponseTime: "+response.getTime());
         System.out.println("String: "+response.getBody().asString());
         System.out.println("StatusLine: "+response.getStatusLine());
         System.out.println("Header: "+response.getHeader("Content-Type"));
-        int statuscode = response.getStatusCode();
-        Assert.assertEquals(+statuscode, 200);
-
+        Assert.assertEquals(response.getStatusCode(), 200);
     }
+
     @Test
     //Verify the empty data.
+    // use RequestSpecification and ResponseSpecification to avoid code duplication.
     public void test_2(){
-        RestAssured.baseURI = "https://reqres.in";
-        Response response = given()
-                .header("x-api-key", "reqres_194ef351d4a44e7f8a57a90e5a311865")
-                .header("Accept", "application/json")
+        given()
+                //Use the RequestSpecification
+                .spec(requestSpec)
                 .log().all()
-                .when()
+        .when()
                 .get("/api/users")
-                .then()
+        .then()
+                //Use the ResponseSpecification
+                .spec(responseSpec)
                 .log().all()
-                .extract()
-                .response();
-
-        Assert.assertEquals(response.getStatusCode(), 200);
-
-        response.then()
+                //Additional assertions
                 .body("page", equalTo(1))
                 .body("data", not(empty()));
     }
@@ -52,31 +69,29 @@ public class UsersAPITest {
     @Test
     //Verify the json data.
     public void test_3() {
-        RestAssured.baseURI = "https://reqres.in";
         Response response = given()
-                .header("x-api-key", "reqres_194ef351d4a44e7f8a57a90e5a311865")
-                .header("Accept", "application/json")
+                .spec(requestSpec)
                 .log().all()
-                .when()
-                .get("/api/users/2");
-
-        response.then()
+        .when()
+                .get("/api/users/2")
+        .then()
+                .spec(responseSpec)
                 .body("data.id", equalTo(2))
-                .body("data.email", equalTo("janet.weaver@reqres.in"));
-        System.out.println("User Data: " + response.jsonPath().getMap(""));
+                .body("data.email", equalTo("janet.weaver@reqres.in"))
+                //Extract(Save) the response to a variable for further processing.
+                .extract()
+                .response();
+        System.out.println("User Data: " + response.jsonPath().getMap("data"));
     }
 
     @Test
     //Verify the first user data with Map collection.
     public void test_4() {
-        RestAssured.baseURI = "https://reqres.in";
         Response response = given()
-                .header("x-api-key", "reqres_194ef351d4a44e7f8a57a90e5a311865")
-                .header("Accept", "application/json")
+                .spec(requestSpec)
                 .log().all()
-                .when()
+            .when()
                 .get("/api/users");
-
         Map<String, Object> firstUser = response.jsonPath().getMap("data[0]");
         System.out.println("First User Data: " + firstUser);
         System.out.println("ID: " + firstUser.get("id"));
@@ -88,15 +103,12 @@ public class UsersAPITest {
     @Test
     //Verify the first user data with List collection.
     public void test_5() {
-        RestAssured.baseURI = "https://reqres.in";
         Response response = given()
-                .header("x-api-key", "reqres_194ef351d4a44e7f8a57a90e5a311865")
-                .header("Accept", "application/json")
+                .spec(requestSpec)
                 .log().all()
-                .when()
+            .when()
                 .get("/api/users");
         List<Map<String, Object>> users = response.jsonPath().getList("data");
-
         for (Map<String, Object> user : users) {
             System.out.println("First Name: " + user.get("first_name"));
         }
