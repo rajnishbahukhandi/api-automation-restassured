@@ -1,6 +1,7 @@
 package Test;
 
 import BaseAPI.BaseTest;
+import Payloads.LoginPayload;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -12,12 +13,7 @@ public class POSTAPI extends BaseTest {
     @Test
     public void postloginSuccessTest_01() {
 
-        String requestBody = """
-                {
-                    "email": "eve.holt@reqres.in",
-                    "password": "cityslicka"
-                }
-                """;
+        String requestBody = LoginPayload.loginSuccess();
 
         io.restassured.response.Response response = given()
                 .spec(requestSpec)
